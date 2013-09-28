@@ -1,0 +1,16 @@
+CC=gcc
+CFLAGS+=-g -W
+
+LIBS=@LIBS@
+
+P=pingerd
+
+all:
+	$(CC) $(CFLAGS) -o $(P) *.c $(LIBS)
+
+clean:
+	rm -f $(P) *.o
+
+distclean: clean
+	rm -rf config.* Makefile configure *.cache
+

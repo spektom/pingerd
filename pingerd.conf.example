@@ -1,0 +1,15 @@
+# Number of simultaneous ICMP connections
+num_connections = 100;
+
+# Report frequency in seconds
+report_freq = 900;
+
+# Directory where ping reports will be stored
+reports_dir = "/var/log/pingerd";
+
+# Hosts database file
+hosts_file = "/var/lib/pingerd/ip.txt"
+
+# pingerd log file
+log_file = "/var/log/pingerd.log";
+
