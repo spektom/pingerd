@@ -75,8 +75,17 @@ void resolve_hosts_handler() {
 }
 
 int resolve_hosts() {
-	jobs.dns_reqs = calloc(conf.hosts_num, sizeof(struct gaicb*));
 	int i;
+	// Other DNS resolutions is in process:
+	if (jobs.dns_reqs) {
+		signal(SIGUSR1, SIG_DFL);
+		for (i = 0; i < conf.hosts_num; ++i) {
+			gai_cancel(jobs.dns_reqs[i]);
+		}
+		free_jobs_dns_reqs();
+	}
+
+	jobs.dns_reqs = calloc(conf.hosts_num, sizeof(struct gaicb*));
 	for (i = 0; i < conf.hosts_num; ++i) {
 		jobs.dns_reqs[i] = calloc(1, sizeof(struct gaicb));
 		jobs.dns_reqs[i]->ar_name = conf.hosts[i];
