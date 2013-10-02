@@ -3,6 +3,6 @@
 
 #include <stdio.h>
 
-extern FILE* logfile;
+extern void log_printf(const char* fmt, ...);
 
 #endif /* _PINGERD_H_ */

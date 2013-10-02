@@ -17,8 +17,9 @@ struct pingerd_conf {
 
 extern struct pingerd_conf conf;
 
-int init_config();
+void init_config();
 int read_config();
-int free_config();
+int reload_config();
+void free_config();
 
 #endif /* _PINGERD_CONF_H_ */

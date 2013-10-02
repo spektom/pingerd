@@ -2,14 +2,14 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
 #include <errno.h>
+#include "log.h"
 #include "pingerd.h"
 #include "pingerd_conf.h"
 
 struct pingerd_conf conf;
 
-int init_config() {
+void init_config() {
 	conf.config_file = "/etc/pingerd.conf";
 	conf.num_connections = 100;
 	conf.report_freq = 900;
@@ -20,7 +20,7 @@ int init_config() {
 	conf.hosts_num = 0;
 }
 
-int free_config_hosts() {
+void free_config_hosts() {
 	if (conf.hosts) {
 		int i;
 		for (i = 0; i < conf.hosts_num; ++i) {
@@ -32,7 +32,7 @@ int free_config_hosts() {
 	conf.hosts_num = 0;
 }
 
-int free_config() {
+void free_config() {
 	free_config_hosts();
 	free(conf.reports_dir);
 	free(conf.hosts_file);
@@ -45,7 +45,7 @@ int free_config() {
 int read_hosts() {
 	FILE* fp = fopen(conf.hosts_file, "r");
 	if (fp == NULL) {
-		fprintf(logfile, "%s: %s\n", conf.hosts_file, strerror(errno));
+		log_error("%s: %s", conf.hosts_file, strerror(errno));
 		return -1;
 	}
 
@@ -66,10 +66,9 @@ int read_hosts() {
 	return 0;
 }
 
-void re_read_hosts() {
-	fprintf(logfile, "Reloading hosts database file: %s\n", conf.hosts_file);
-	read_hosts();
-	signal(SIGHUP, re_read_hosts);
+int reload_config() {
+	log_info("Reloading hosts database file: %s", conf.hosts_file);
+	return read_hosts();
 }
 
 /**
@@ -81,11 +80,11 @@ int read_config() {
 
 	if (config_read_file(&cfg, conf.config_file) == CONFIG_FALSE) {
 		if (config_error_type(&cfg) == CONFIG_ERR_FILE_IO) {
-			fprintf(logfile, "Configuration file not found: %s\n", conf.config_file);
+			log_error("Configuration file not found: %s", conf.config_file);
 			config_destroy(&cfg);
 			return -1;
 		}
-		fprintf(logfile, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
+		log_error("%s:%d - %s", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
 		config_destroy(&cfg);
 		return -1;
 	}
@@ -116,7 +115,5 @@ int read_config() {
 		return -1;
 	}
 
-	// Re-read hosts database file when SIGHUP is received:
-	signal(SIGHUP, re_read_hosts);
 	return 0;
 }

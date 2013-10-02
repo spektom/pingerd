@@ -11,5 +11,5 @@ reports_dir = "/var/log/pingerd";
 hosts_file = "/var/lib/pingerd/ip.txt"
 
 # pingerd log file
-log_file = "/var/log/pingerd.log";
+log_file = "/var/log/pingerd/main.log";
 
