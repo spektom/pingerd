@@ -28,7 +28,7 @@ void _log_printf(const char* severity, const char * fmt, va_list args) {
 	vsnprintf(_logbuf, sizeof(_logbuf), fmt, args);
 	va_end(args);
 
-	fprintf(_logfile ? _logfile : stderr, "%s [%s]: %s\n", _timebuf, severity, _logbuf);
+	fprintf(_logfile ? _logfile : stderr, "%s [%s]:\t%s\n", _timebuf, severity, _logbuf);
 	if (_logfile) {
 		fflush(_logfile);
 	}

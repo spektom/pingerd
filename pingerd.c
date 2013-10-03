@@ -1,8 +1,8 @@
 #define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <signal.h>
+#include <unistd.h>
 #include <netdb.h>
 #include <string.h>
 #include "config.h"
@@ -56,8 +56,6 @@ void free_jobs() {
 }
 
 void resolve_hosts_handler() {
-	signal(SIGUSR1, SIG_DFL);
-
 	log_debug("DNS resolution has completed");
 	free_jobs_hosts();
 	jobs.hosts = calloc(jobs.hosts_num, sizeof(struct addrinfo*));
@@ -72,13 +70,18 @@ void resolve_hosts_handler() {
 		}
 	}
 	free_jobs_dns_reqs();
+
+	// Start pinger timer
+	alarm(conf.report_freq);
 }
 
 int resolve_hosts() {
+	// Cancel pinger timer
+	alarm(0);
+
 	int i;
 	// Other DNS resolutions is in process:
 	if (jobs.dns_reqs) {
-		signal(SIGUSR1, SIG_DFL);
 		for (i = 0; i < conf.hosts_num; ++i) {
 			gai_cancel(jobs.dns_reqs[i]);
 		}
@@ -95,11 +98,16 @@ int resolve_hosts() {
 	struct sigevent sigev;
 	sigev.sigev_notify = SIGEV_SIGNAL;
 	sigev.sigev_signo = SIGUSR1;
-	signal(SIGUSR1, resolve_hosts_handler);
+
+	struct sigaction sact;
+    sigemptyset(&sact.sa_mask);
+    sact.sa_flags = SA_RESETHAND;
+    sact.sa_handler = resolve_hosts_handler;
+    sigaction(SIGUSR1, &sact, NULL);
 
 	int ret;
 	if ((ret = getaddrinfo_a(GAI_NOWAIT, jobs.dns_reqs, conf.hosts_num, &sigev)) != 0) {
-		log_error("getaddrinfo_a() failed: %s", gai_strerror(ret));
+		log_error("getaddrinfo_a(): %s", gai_strerror(ret));
 		return -1;
 	}
 	
@@ -107,11 +115,47 @@ int resolve_hosts() {
 	return 0;
 }
 
-void reload() {
-	signal(SIGHUP, reload);
+void pinger() {
+	// Restart pinger timer
+	alarm(conf.report_freq);
+}
+
+void server_reload() {
 	if (reload_config() != -1) {
 		resolve_hosts();
 	}
+}
+
+void server_stop(int signum) {
+	log_info("%s - closing pingerd", strsignal(signum));
+	log_close();
+	free_config();
+	free_jobs();
+	exit(0);
+}
+
+void setup_signal_handlers() {
+	// Reload pingerd when SIGHUP is received:
+	struct sigaction reload_sact;
+    sigemptyset(&reload_sact.sa_mask);
+    reload_sact.sa_flags = 0;
+    reload_sact.sa_handler = server_reload;
+    sigaction(SIGHUP, &reload_sact, NULL);
+
+	// Setup clean exit handlers:
+	struct sigaction stop_sact;
+    sigemptyset(&stop_sact.sa_mask);
+    stop_sact.sa_flags = 0;
+    stop_sact.sa_handler = server_stop;
+    sigaction(SIGINT, &stop_sact, NULL);
+    sigaction(SIGTERM, &stop_sact, NULL);
+
+	// Pinger timer
+	struct sigaction ping_sact;
+    sigemptyset(&ping_sact.sa_mask);
+    ping_sact.sa_flags = 0;
+    ping_sact.sa_handler = pinger;
+    sigaction(SIGALRM, &ping_sact, NULL);
 }
 
 int server_start() {
@@ -123,18 +167,12 @@ int server_start() {
 		return -1;
 	}
 
-	log_debug("Starting pingerd daemon");
+	log_info("Starting pingerd daemon");
 	resolve_hosts();
 
-	// Re-load pingerd when SIGHUP is received:
-	signal(SIGHUP, reload);
+	setup_signal_handlers();
 
-	getc(stdin);
-
-	log_close();
-	free_config();
-	free_jobs();
-
+	while(1) {}
 	return 0;
 }
 

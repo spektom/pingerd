@@ -67,7 +67,7 @@ int read_hosts() {
 }
 
 int reload_config() {
-	log_info("Reloading hosts database file: %s", conf.hosts_file);
+	log_info("Reloading hosts from: %s", conf.hosts_file);
 	return read_hosts();
 }
 
