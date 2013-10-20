@@ -4,15 +4,18 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "log.h"
-#include "pingerd.h"
 #include "pingerd_conf.h"
 
-struct pingerd_conf conf;
+#define MAXPACKET 65536 - 60 - 8 /* @see pingerd.c */
+
+struct pingerd_conf_s conf;
 
 void init_config() {
 	conf.config_file = "/etc/pingerd.conf";
 	conf.num_connections = 100;
 	conf.report_freq = 900;
+	conf.packet_size = 64;
+	conf.packets_count = 4;
 	conf.reports_dir = strdup("/var/log/pingerd/");
 	conf.hosts_file = strdup("/etc/pingerd/ip.txt");
 	conf.log_file = strdup("/var/log/pingerd.conf");
@@ -57,6 +60,9 @@ int read_hosts() {
 		tok = strtok(buf, "\r\n");
 		if (strlen (tok) > 0) {
 			conf.hosts = (char **) realloc (conf.hosts, sizeof(char *) * (conf.hosts_num+1));
+			if (!conf.hosts) {
+				log_fatal("can't allocate memory");
+			}
 			conf.hosts[conf.hosts_num] = strdup(tok);
 			++conf.hosts_num;
 		}
@@ -96,6 +102,17 @@ int read_config() {
 	}
 	if (config_lookup_int(&cfg, "report_freq", &intVal) == CONFIG_TRUE) {
 		conf.report_freq = intVal;
+	}
+	if (config_lookup_int(&cfg, "packet_size", &intVal) == CONFIG_TRUE) {
+		if (intVal > MAXPACKET) {
+			log_error("packet_size: %d exceeds maximal packet size (%d)", intVal, MAXPACKET);
+			config_destroy(&cfg);
+			return -1;
+		}
+		conf.packet_size = intVal;
+	}
+	if (config_lookup_int(&cfg, "packets_count", &intVal) == CONFIG_TRUE) {
+		conf.packets_count = intVal;
 	}
 	if (config_lookup_string(&cfg, "reports_dir", &charVal) == CONFIG_TRUE) {
 		free(conf.reports_dir);

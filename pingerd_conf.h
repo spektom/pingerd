@@ -1,13 +1,15 @@
-#ifndef _PINGERD_CONF_H_
-#define _PINGERD_CONF_H_
+#ifndef PINGERD_CONF_H
+#define PINGERD_CONF_H
 
 /**
  * Pinger daemon configuration
  */
-struct pingerd_conf {
+struct pingerd_conf_s {
 	char* config_file;
 	int num_connections;
 	int report_freq;
+	int packet_size;
+	int packets_count;
 	char* reports_dir;
 	char* hosts_file;
 	char* log_file;
@@ -15,11 +17,11 @@ struct pingerd_conf {
 	int hosts_num;
 };
 
-extern struct pingerd_conf conf;
+extern struct pingerd_conf_s conf;
 
 void init_config();
 int read_config();
 int reload_config();
 void free_config();
 
-#endif /* _PINGERD_CONF_H_ */
+#endif /* PINGERD_CONF_H */
