@@ -10,7 +10,7 @@ char _timebuf[64];
 int log_open(const char* filename) {
 	log_close();
 	_logfile = fopen(filename, "a");
-	return _logfile ? 0 : -1;
+	return !_logfile ? -1 : 0;
 }
 
 void log_close() {

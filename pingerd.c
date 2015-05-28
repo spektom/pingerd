@@ -118,7 +118,8 @@ void resolve_hosts_handler() {
 	dns_reqs = NULL;
 
 	log_debug("Scheduling pinger after %d minutes", conf.report_freq);
-	alarm(conf.report_freq);
+	//alarm(conf.report_freq);
+	alarm(1);
 }
 
 /**
@@ -153,10 +154,10 @@ int resolve_hosts() {
 	sigev.sigev_signo = SIGRTMIN;
 
 	struct sigaction sact;
-    sigemptyset(&sact.sa_mask);
-    sact.sa_flags = SA_RESETHAND;
-    sact.sa_handler = resolve_hosts_handler;
-    sigaction(SIGRTMIN, &sact, NULL);
+	sigemptyset(&sact.sa_mask);
+	sact.sa_flags = SA_RESETHAND;
+	sact.sa_handler = resolve_hosts_handler;
+	sigaction(SIGRTMIN, &sact, NULL);
 	
 	log_debug("Starting DNS resolution");
 
@@ -170,9 +171,9 @@ int resolve_hosts() {
 
 void init_packet(struct job_s* job) {
 	job->packet_len = conf.packet_size + MAXIPLEN + MAXICMPLEN;
-    if (!(job->packet = (u_char*) malloc(job->packet_len))) {
+	if (!(job->packet = (u_char*) malloc(job->packet_len))) {
 		log_fatal("can't allocate memory");
-    }
+	}
 }
 
 /**
@@ -258,32 +259,32 @@ void server_stop(int signum) {
 void setup_signal_handlers() {
 	// Reload pingerd when SIGHUP is received:
 	struct sigaction reload_sact;
-    sigemptyset(&reload_sact.sa_mask);
-    reload_sact.sa_flags = 0;
-    reload_sact.sa_handler = server_reload;
-    sigaction(SIGHUP, &reload_sact, NULL);
+	sigemptyset(&reload_sact.sa_mask);
+	reload_sact.sa_flags = 0;
+	reload_sact.sa_handler = server_reload;
+	sigaction(SIGHUP, &reload_sact, NULL);
 
 	// Setup clean exit handlers:
 	struct sigaction stop_sact;
-    sigemptyset(&stop_sact.sa_mask);
-    stop_sact.sa_flags = 0;
-    stop_sact.sa_handler = server_stop;
-    sigaction(SIGINT, &stop_sact, NULL);
-    sigaction(SIGTERM, &stop_sact, NULL);
+	sigemptyset(&stop_sact.sa_mask);
+	stop_sact.sa_flags = 0;
+	stop_sact.sa_handler = server_stop;
+	sigaction(SIGINT, &stop_sact, NULL);
+	sigaction(SIGTERM, &stop_sact, NULL);
 
 	// Pinger timer
 	struct sigaction ping_sact;
-    sigemptyset(&ping_sact.sa_mask);
-    ping_sact.sa_flags = 0;
-    ping_sact.sa_handler = pinger;
-    sigaction(SIGALRM, &ping_sact, NULL);
+	sigemptyset(&ping_sact.sa_mask);
+	ping_sact.sa_flags = 0;
+	ping_sact.sa_handler = pinger;
+	sigaction(SIGALRM, &ping_sact, NULL);
 }
 
 int server_start() {
 	if (read_config() == -1) {
 		return -1;
 	}
-	if (log_open(conf.log_file) == -1) {
+	if (conf.log_file && log_open(conf.log_file) == -1) {
 		perror(conf.log_file);
 		return -1;
 	}

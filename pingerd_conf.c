@@ -18,7 +18,7 @@ void init_config() {
 	conf.packets_count = 4;
 	conf.reports_dir = strdup("/var/log/pingerd/");
 	conf.hosts_file = strdup("/etc/pingerd/ip.txt");
-	conf.log_file = strdup("/var/log/pingerd.conf");
+	conf.log_file = NULL;
 	conf.hosts = NULL;
 	conf.hosts_num = 0;
 }
